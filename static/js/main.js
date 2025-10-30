@@ -8,109 +8,125 @@ document.addEventListener('DOMContentLoaded', () => {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // Reset UI
-        resultsContainer.classList.add('results-hidden');
-        errorContainer.classList.add('error-hidden');
-        loader.classList.remove('loader-hidden');
+        console.log('Form submitted. Starting planning process...');
+
+        // Reset UI state
+        resultsContainer.innerHTML = ''; // Clear old results completely
+        resultsContainer.classList.add('hidden');
+        errorContainer.classList.add('hidden');
+        loader.classList.remove('hidden');
 
         const capacity = document.getElementById('capacity').value;
 
         try {
+            console.log(`Fetching plan for capacity: ${capacity}`);
             const response = await fetch('/api/plan', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ capacity: capacity }),
             });
-
+            
             const data = await response.json();
+            console.log('Received response from server:', data);
 
             if (!response.ok) {
-                throw new Error(data.error || 'An unknown error occurred.');
+                // Handle errors returned from the API (e.g., validation errors)
+                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
             }
 
             displayResults(data);
 
         } catch (error) {
+            console.error('An error occurred during the fetch operation:', error);
             displayError(error.message);
         } finally {
-            loader.classList.add('loader-hidden');
+            loader.classList.add('hidden');
         }
     });
 
     function displayError(message) {
         errorContainer.textContent = `Error: ${message}`;
-        errorContainer.classList.remove('error-hidden');
+        errorContainer.classList.remove('hidden');
     }
 
     function displayResults(data) {
-        // Populate Manifest Table
-        const manifestBody = document.getElementById('manifest-table-body');
-        manifestBody.innerHTML = ''; // Clear previous results
-        data.manifest.forEach(pkg => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${pkg.package_id}</td>
-                <td>${pkg.destination}</td>
-                <td>${pkg.weight_kg}</td>
-                <td>${pkg.priority}</td>
-            `;
-            manifestBody.appendChild(row);
-        });
-
-        document.getElementById('total-weight').textContent = `Total Weight: ${data.total_weight}kg`;
-        document.getElementById('total-priority').textContent = `Total Priority: ${data.max_priority}`;
+        console.log('Displaying results...');
         
-        // Populate Route Information
-        const routePath = document.getElementById('route-path');
-        if (data.route_names && data.route_names.length > 0) {
-            routePath.innerHTML = data.route_names.join(' &rarr; ');
-            initializeMap(data);
-        } else {
-            routePath.textContent = 'Could not compute a valid round-trip route.';
-            document.getElementById('map').innerHTML = '<p style="text-align:center; padding: 20px;">Map not available.</p>';
-        }
+        // Build the manifest card HTML
+        const manifestHTML = `
+            <div class="card" id="manifest-card">
+                <h2>Optimal Loading Manifest</h2>
+                <div class="stats">
+                    <span>Total Weight: ${data.total_weight}kg</span>
+                    <span>Total Priority: ${data.max_priority}</span>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Destination</th><th>Weight</th><th>Priority</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.manifest.map(pkg => `
+                                <tr>
+                                    <td>${pkg.package_id}</td>
+                                    <td>${pkg.destination}</td>
+                                    <td>${pkg.weight_kg}</td>
+                                    <td>${pkg.priority}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
 
-        resultsContainer.classList.remove('results-hidden');
+        // Build the route card HTML
+        const routeHTML = `
+            <div class="card" id="route-card">
+                <h2>Optimal Delivery Route</h2>
+                ${data.route_names && data.route_names.length > 0
+                    ? `<p class="route-path">${data.route_names.join(' &rarr; ')}</p><div id="map"></div>`
+                    : `<p>Could not compute a valid round-trip route.</p>`
+                }
+            </div>
+        `;
+
+        // Inject the new HTML into the results container
+        resultsContainer.innerHTML = manifestHTML + routeHTML;
+        resultsContainer.classList.remove('hidden');
+
+        // Initialize the map only if the route was successfully calculated
+        if (data.route_names && data.route_names.length > 0) {
+            initializeMap(data);
+        }
+        console.log('Results displayed successfully.');
     }
 
     function initializeMap(data) {
-        // Destroy previous map instance if it exists
+        console.log('Initializing map...');
         if (map) {
-            map.remove();
+            map.remove(); // Remove old map instance if it exists
         }
         
-        const mapContainer = document.getElementById('map');
-        map = L.map(mapContainer).setView(data.route_coords[0], 13);
+        map = L.map('map').setView(data.route_coords[0], 13);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Custom Icons
-        const warehouseIcon = L.icon({
-            iconUrl: '/static/img/depot.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-        });
-        const packageIcon = L.icon({
-            iconUrl: '/static/img/package.png',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-        });
+        // Define custom icons
+        const warehouseIcon = L.icon({ iconUrl: '/static/img/depot.png', iconSize: [40, 40], iconAnchor: [20, 40] });
+        const packageIcon = L.icon({ iconUrl: '/static/img/package.png', iconSize: [32, 32], iconAnchor: [16, 32] });
 
-        // Add markers
+        // Add markers to the map
         data.route_names.forEach((name, index) => {
-            const coord = data.route_coords[index];
-            const icon = name === 'Warehouse' ? warehouseIcon : packageIcon;
-            L.marker(coord, { icon: icon }).addTo(map)
+            L.marker(data.route_coords[index], { icon: name === 'Warehouse' ? warehouseIcon : packageIcon })
+                .addTo(map)
                 .bindPopup(`<b>${index === 0 ? '' : `${index}. `}${name}</b>`);
         });
 
-        // Draw polyline for the route
         const polyline = L.polyline(data.route_coords, { color: 'var(--primary-color)' }).addTo(map);
         map.fitBounds(polyline.getBounds().pad(0.1));
+        console.log('Map initialized.');
     }
 });

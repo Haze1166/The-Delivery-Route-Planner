@@ -37,10 +37,6 @@ header h1 {
     align-items: center;
     gap: 1rem;
     margin-bottom: 2rem;
-    background: var(--card-background);
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
 }
 
 input[type="number"] {
@@ -134,7 +130,7 @@ th {
     top: 0;
 }
 
-#route-path {
+.route-path {
     font-weight: 600;
     color: var(--primary-color);
     margin-bottom: 1rem;
@@ -147,8 +143,8 @@ th {
     border-radius: 8px;
 }
 
-.loader-hidden, .error-hidden, .results-hidden {
-    display: none;
+.hidden {
+    display: none !important;
 }
 
 @media (max-width: 900px) {
