@@ -1,0 +1,11 @@
+package_id,destination,weight_kg,priority
+PKG001,Uptown,20,8
+PKG002,Downtown,15,7
+PKG003,Suburb,30,9
+PKG004,Industrial Park,50,10
+PKG005,Uptown,10,5
+PKG006,Downtown,25,8
+PKG007,Suburb,5,3
+PKG008,Industrial Park,40,9
+PKG009,Downtown,18,7
+PKG010,Uptown,22,6

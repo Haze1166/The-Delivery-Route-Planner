@@ -1,0 +1,6 @@
+,Warehouse,Uptown,Downtown,Suburb,Industrial Park
+Warehouse,0,10,15,20,30
+Uptown,10,0,5,25,35
+Downtown,15,5,0,22,32
+Suburb,20,25,22,0,12
+Industrial Park,30,35,32,12,0
