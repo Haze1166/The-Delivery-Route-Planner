@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Delivery Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Advanced Delivery Planner</h1>
+            <p>Enter your truck's capacity to optimize its load and calculate the most efficient route.</p>
+        </header>
+
+        <form id="planner-form">
+            <label for="capacity">Truck Weight Capacity (kg):</label>
+            <input type="number" id="capacity" name="capacity" value="100" min="1" required>
+            <button type="submit">Generate Plan</button>
+        </form>
+
+        <div id="loader" class="loader-hidden"></div>
+        <div id="error-container" class="error-hidden"></div>
+
+        <main id="results-container" class="results-hidden">
+            <div class="card" id="manifest-card">
+                <h2>Optimal Loading Manifest</h2>
+                <div class="stats">
+                    <span id="total-weight"></span>
+                    <span id="total-priority"></span>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>ID</th><th>Destination</th><th>Weight</th><th>Priority</th></tr>
+                        </thead>
+                        <tbody id="manifest-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card" id="route-card">
+                <h2>Optimal Delivery Route</h2>
+                <p id="route-path"></p>
+                <div id="map"></div>
+            </div>
+        </main>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
