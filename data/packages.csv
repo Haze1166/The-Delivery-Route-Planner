@@ -1,11 +1,13 @@
 package_id,destination,weight_kg,priority
-PKG001,Uptown,20,8
-PKG002,Downtown,15,7
-PKG003,Suburb,30,9
-PKG004,Industrial Park,50,10
-PKG005,Uptown,10,5
-PKG006,Downtown,25,8
-PKG007,Suburb,5,3
-PKG008,Industrial Park,40,9
-PKG009,Downtown,18,7
-PKG010,Uptown,22,6
+PKG001,Delhi,25,8
+PKG002,Mumbai,30,9
+PKG003,Bengaluru,40,10
+PKG004,Chennai,15,7
+PKG005,Kolkata,22,8
+PKG006,Hyderabad,18,6
+PKG007,Mumbai,35,9
+PKG008,Pune,12,5
+PKG009,Delhi,28,7
+PKG010,Bengaluru,50,10
+PKG011,Ahmedabad,10,4
+PKG012,Mumbai,20,8

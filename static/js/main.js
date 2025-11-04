@@ -1,132 +1,71 @@
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('planner-form');
     const loader = document.getElementById('loader');
-    const resultsContainer = document.getElementById('results-container');
+    const resultsArea = document.getElementById('results-area');
     const errorContainer = document.getElementById('error-container');
-
-    let map = null; // To hold the map instance
+    let map = null;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        console.log('Form submitted. Starting planning process...');
-
-        // Reset UI state
-        resultsContainer.innerHTML = ''; // Clear old results completely
-        resultsContainer.classList.add('hidden');
+        resultsArea.classList.remove('visible');
         errorContainer.classList.add('hidden');
         loader.classList.remove('hidden');
 
-        const capacity = document.getElementById('capacity').value;
-
         try {
-            console.log(`Fetching plan for capacity: ${capacity}`);
             const response = await fetch('/api/plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ capacity: capacity }),
+                body: JSON.stringify({ capacity: document.getElementById('capacity').value }),
             });
-            
             const data = await response.json();
-            console.log('Received response from server:', data);
-
-            if (!response.ok) {
-                // Handle errors returned from the API (e.g., validation errors)
-                throw new Error(data.error || `HTTP error! Status: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(data.error);
             displayResults(data);
-
         } catch (error) {
-            console.error('An error occurred during the fetch operation:', error);
-            displayError(error.message);
+            errorContainer.textContent = `Error: ${error.message}`;
+            errorContainer.classList.remove('hidden');
         } finally {
             loader.classList.add('hidden');
         }
     });
 
-    function displayError(message) {
-        errorContainer.textContent = `Error: ${message}`;
-        errorContainer.classList.remove('hidden');
-    }
-
     function displayResults(data) {
-        console.log('Displaying results...');
-        
-        // Build the manifest card HTML
-        const manifestHTML = `
-            <div class="card" id="manifest-card">
-                <h2>Optimal Loading Manifest</h2>
-                <div class="stats">
-                    <span>Total Weight: ${data.total_weight}kg</span>
-                    <span>Total Priority: ${data.max_priority}</span>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr><th>ID</th><th>Destination</th><th>Weight</th><th>Priority</th></tr>
-                        </thead>
-                        <tbody>
-                            ${data.manifest.map(pkg => `
-                                <tr>
-                                    <td>${pkg.package_id}</td>
-                                    <td>${pkg.destination}</td>
-                                    <td>${pkg.weight_kg}</td>
-                                    <td>${pkg.priority}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        document.getElementById('total-weight').textContent = `Total Weight: ${data.total_weight}kg`;
+        document.getElementById('total-priority').textContent = `Total Priority: ${data.total_priority}`;
+        const manifestBody = document.getElementById('manifest-table-body');
+        manifestBody.innerHTML = '';
+        data.manifest.forEach(pkg => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${pkg.package_id}</td><td>${pkg.destination}</td><td>${pkg.weight_kg}</td><td>${pkg.priority}</td>`;
+            manifestBody.appendChild(row);
+        });
 
-        // Build the route card HTML
-        const routeHTML = `
-            <div class="card" id="route-card">
-                <h2>Optimal Delivery Route</h2>
-                ${data.route_names && data.route_names.length > 0
-                    ? `<p class="route-path">${data.route_names.join(' &rarr; ')}</p><div id="map"></div>`
-                    : `<p>Could not compute a valid round-trip route.</p>`
-                }
-            </div>
-        `;
-
-        // Inject the new HTML into the results container
-        resultsContainer.innerHTML = manifestHTML + routeHTML;
-        resultsContainer.classList.remove('hidden');
-
-        // Initialize the map only if the route was successfully calculated
+        const routePath = document.getElementById('route-path');
         if (data.route_names && data.route_names.length > 0) {
+            routePath.innerHTML = data.route_names.join(' &rarr; ');
             initializeMap(data);
+        } else {
+            routePath.textContent = 'Route could not be calculated.';
+            document.getElementById('map').innerHTML = '';
         }
-        console.log('Results displayed successfully.');
+        resultsArea.classList.add('visible');
     }
 
     function initializeMap(data) {
-        console.log('Initializing map...');
-        if (map) {
-            map.remove(); // Remove old map instance if it exists
-        }
+        if (map) map.remove();
+        if (!data.route_coords || data.route_coords.length === 0) return;
         
-        map = L.map('map').setView(data.route_coords[0], 13);
+        map = L.map('map').setView(data.route_coords[0], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Define custom icons
         const warehouseIcon = L.icon({ iconUrl: '/static/img/depot.png', iconSize: [40, 40], iconAnchor: [20, 40] });
         const packageIcon = L.icon({ iconUrl: '/static/img/package.png', iconSize: [32, 32], iconAnchor: [16, 32] });
-
-        // Add markers to the map
-        data.route_names.forEach((name, index) => {
-            L.marker(data.route_coords[index], { icon: name === 'Warehouse' ? warehouseIcon : packageIcon })
-                .addTo(map)
-                .bindPopup(`<b>${index === 0 ? '' : `${index}. `}${name}</b>`);
+        
+        data.route_names.forEach((name, i) => {
+            L.marker(data.route_coords[i], { icon: name === 'Warehouse' ? warehouseIcon : packageIcon })
+                .addTo(map).bindPopup(`<b>${name}</b>`);
         });
 
-        const polyline = L.polyline(data.route_coords, { color: 'var(--primary-color)' }).addTo(map);
+        const polyline = L.polyline(data.route_coords, { color: '#007bff' }).addTo(map);
         map.fitBounds(polyline.getBounds().pad(0.1));
-        console.log('Map initialized.');
     }
 });
