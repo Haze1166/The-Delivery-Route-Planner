@@ -21,7 +21,7 @@ Algorithms in Action
 
 This project was built to demonstrate the practical application of fundamental algorithms:
 
-1. 0/1 Knapsack Algorithm
+1. 0/1 Knapsack Algorithm  .
 
 Problem: A delivery truck has a fixed weight capacity. How do you select which packages to deliver from a list of available packages, each with its own weight and priority (value)?
 
